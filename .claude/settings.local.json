@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(pnpm dev *)",
+      "Bash(rm -rf lib/auth)",
+      "Bash(rm public/file.svg public/globe.svg public/next.svg public/vercel.svg public/window.svg)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(dir *)",
+      "Bash(ls \"C:\\\\Users\\\\rinali\\\\Documents\\\\3.TugasMatkul\\\\KBT\\\\SaveBites\\\\components\")",
+      "Bash(ls \"C:\\\\Users\\\\rinali\\\\Documents\\\\3.TugasMatkul\\\\KBT\\\\SaveBites\\\\lib\\\\format.ts\")",
+      "Bash(ls \"C:\\\\Users\\\\rinali\\\\Documents\\\\3.TugasMatkul\\\\KBT\\\\SaveBites\\\\lib\\\\auth-store.ts\")",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('next:',d.get\\('dependencies',{}\\).get\\('next','N/A'\\)\\);print\\('react:',d.get\\('dependencies',{}\\).get\\('react','N/A'\\)\\);print\\('react-dom:',d.get\\('dependencies',{}\\).get\\('react-dom','N/A'\\)\\);print\\('@supabase:',d.get\\('dependencies',{}\\).get\\('@supabase/supabase-js','N/A'\\)\\);print\\('typescript:',d.get\\('devDependencies',{}\\).get\\('typescript','N/A'\\)\\)\")",
+      "Bash(xargs grep -l \"handlePendingOrders\")",
+      "Bash(rm -f middleware.ts)",
+      "Bash(rm -rf lib/supabase)",
+      "Bash(rm -rf supabase)",
+      "Bash(npx next *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(curl *)",
+      "Bash(npm run *)",
+      "Bash(echo \"PID:$!\")",
+      "Bash(netstat -ano)",
+      "Bash(timeout 15 bash -c 'curl -sS http://localhost:3000/')",
+      "Bash(tasklist /FI \"PID eq 11520\")",
+      "Bash(tasklist)",
+      "Bash(taskkill *)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(mkdir -p _archive_v2)",
+      "Bash(mv app *)",
+      "Bash(mv lib *)",
+      "Bash(mv supabase *)",
+      "Bash(mv types *)",
+      "Bash(npm install *)"
+    ]
+  }
+}
