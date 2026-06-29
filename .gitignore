@@ -46,3 +46,7 @@ Thumbs.db
 
 # archive
 _archive_v2/
+.playwright-mcp/
+
+# Local diagnostic scripts
+scripts/diagnose-db.ts
