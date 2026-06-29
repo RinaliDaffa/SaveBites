@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const supabase2 = await createClient();
     const { data: order, error: orderError } = await supabase2
       .from('orders')
-      .select('*, listings(title, original_price, surplus_price), profiles(full_name, phone)')
+      .select('*, listings(title, original_price, surplus_price), profiles(full_name, phone, email)')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     ];
 
     // Create Midtrans charge
+    const profile = order.profiles;
     const chargeResult = await createCharge({
       payment_type: paymentType as 'qris' | 'gopay' | 'ovo' | 'dana' | 'shopeepay',
       transaction_details: {
@@ -78,9 +79,9 @@ export async function POST(request: NextRequest) {
       },
       item_details: paymentItems,
       customer_details: {
-        first_name: ((order.profiles as any)?.full_name as string | null) ?? 'Customer',
-        email: (order.profiles as any)?.email ?? user.email ?? '',
-        phone: ((order.profiles as any)?.phone ?? '') as string,
+        first_name: profile?.full_name ?? 'Customer',
+        email: profile?.email ?? user.email ?? '',
+        phone: profile?.phone ?? '',
       },
     });
 
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       midtrans_order_id: chargeResult.order_id,
       midtrans_txn_id: chargeResult.transaction_id,
-      raw_response: chargeResult as any,
+      raw_response: chargeResult as unknown as Record<string, unknown>,
     });
 
     if (paymentError) {

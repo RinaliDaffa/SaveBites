@@ -10,7 +10,9 @@
 
 ## 1. Why This Document Exists
 
-The earlier static demo (`/app`, 6 screens, no DB) proved the core idea: a merchant posts a surplus meal at a steep discount, a nearby consumer discovers it, pays, walks over, scans a QR, eats. That part works as a paper prototype.
+The earlier static demo (`/
+
+app`, 6 screens, no DB) proved the core idea: a merchant posts a surplus meal at a steep discount, a nearby consumer discovers it, pays, walks over, scans a QR, eats. That part works as a paper prototype.
 
 It does not work as a product. There is no real auth, no real payment, no real-time stock, no map, no pickup verification, no analytics, no money flowing. This spec rebuilds SaveBites as a real production system while keeping the same simple flow the demo validated.
 

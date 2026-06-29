@@ -70,12 +70,23 @@ export async function POST(
 
     const resolvedParams = await params;
 
+    // Resolve user → merchant (the merchant's merchant_id, not owner_id).
+    const { data: merchant } = await supabase
+      .from('merchants')
+      .select('id')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+
+    if (!merchant) {
+      return NextResponse.json({ error: 'Merchant tidak ditemukan' }, { status: 403 });
+    }
+
     // Look up the specific order by its ID — verify the merchant owns it.
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .select('id, merchant_id, status, payment_status, order_number, pickup_code')
       .eq('id', resolvedParams.id)
-      .eq('merchant_id', user.id)
+      .eq('merchant_id', merchant.id)
       .maybeSingle();
 
     if (orderErr) {
@@ -115,7 +126,8 @@ export async function POST(
       );
     }
 
-    if (order.status !== 'ready') {
+    // Order must be 'paid' (awaiting merchant confirm) to proceed to pickup.
+    if (!['paid', 'ready'].includes(order.status)) {
       return NextResponse.json(
         { error: 'Pesanan belum siap untuk pickup' },
         { status: 400 }

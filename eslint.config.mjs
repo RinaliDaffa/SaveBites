@@ -1,3 +1,10 @@
-import { config } from 'eslint-config-next';
+import nextConfig from 'eslint-config-next';
 
-export default [...config];
+export default [
+  ...nextConfig,
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
+    },
+  },
+];
