@@ -18,7 +18,11 @@ export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  phone: z.string().optional().or(z.literal('')),
+  phone: z
+    .string()
+    .regex(/^\+62\d{8,13}$/, 'Phone must be in +62XXXXXXXXX format')
+    .optional()
+    .or(z.literal('')),
   role: z.enum(['consumer', 'merchant']).refine((val) => val !== undefined, {
     message: 'Please select a role',
   }),

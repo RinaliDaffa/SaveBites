@@ -145,12 +145,16 @@ export default function RegisterPage() {
           <Input
             label="Phone"
             type="tel"
-            placeholder="+62 812 xxxx xxxx"
+            placeholder="812 xxxx xxxx"
             value={form.phone}
-            onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '').replace(/^62/, '').slice(0, 13);
+              setForm(f => ({ ...f, phone: digits ? `+62${digits}` : '' }));
+            }}
             icon={<Phone className="w-4 h-4" />}
             required
           />
+          <p className="text-xs text-stone-500 -mt-2 ml-1">+62 prefix is added automatically</p>
 
           {error && (
             <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-xl">{error}</p>
