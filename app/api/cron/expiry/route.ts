@@ -14,9 +14,10 @@ import { createClient } from '@supabase/supabase-js';
 export const maxDuration = 30;
 
 export async function POST(request: Request): Promise<Response> {
-  // Verify Vercel Cron secret
+  // Verify cron secret (accept either VERCEL_CRON_SECRET or CRON_SECRET)
   const secret = request.headers.get('X-Cron-Secret');
-  if (secret !== process.env.VERCEL_CRON_SECRET) {
+  const expected = process.env.CRON_SECRET ?? process.env.VERCEL_CRON_SECRET;
+  if (!expected || secret !== expected) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
