@@ -33,7 +33,7 @@ export default function RegisterPage() {
     try {
       parsed = registerSchema.parse(form) as typeof parsed;
     } catch {
-      setError('Please fill in all required fields correctly.');
+      setError('Mohon lengkapi semua kolom yang diperlukan dengan benar.');
       return;
     }
 
@@ -63,7 +63,7 @@ export default function RegisterPage() {
       // `full_name`, `phone`, and `role` from raw_user_meta_data. No explicit insert
       // here — that would conflict on the primary key.
       if (!data.user) {
-        setError('Sign-up succeeded but no user was returned. Please try again.');
+        setError('Pendaftaran berhasil tetapi tidak ada pengguna yang dikembalikan. Silakan coba lagi.');
         return;
       }
 
@@ -74,7 +74,7 @@ export default function RegisterPage() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Registration failed. Please try again.');
+        setError('Pendaftaran gagal. Silakan coba lagi.');
       }
     } finally {
       setLoading(false);
@@ -116,9 +116,9 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Full Name"
+            label="Nama Lengkap"
             type="text"
-            placeholder="John Doe"
+            placeholder="Budi Santoso"
             value={form.fullName}
             onChange={(e) => setForm(f => ({ ...f, fullName: e.target.value }))}
             icon={<User className="w-4 h-4" />}
@@ -127,7 +127,7 @@ export default function RegisterPage() {
           <Input
             label="Email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="anda@contoh.com"
             value={form.email}
             onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
             icon={<Mail className="w-4 h-4" />}
@@ -136,7 +136,7 @@ export default function RegisterPage() {
           <Input
             label="Password"
             type="password"
-            placeholder="Min. 8 characters"
+            placeholder="Minimal 8 karakter"
             value={form.password}
             onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
             icon={<Lock className="w-4 h-4" />}

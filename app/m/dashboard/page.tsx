@@ -64,8 +64,8 @@ export default async function MerchantDashboard() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10 text-center">
         <div className="text-6xl mb-4">!</div>
-        <h2 className="text-xl font-bold text-stone-900">Failed to load</h2>
-        <p className="text-stone-500 mt-2">Could not fetch dashboard data.</p>
+        <h2 className="text-xl font-bold text-stone-900">Gagal memuat</h2>
+        <p className="text-stone-500 mt-2">Tidak dapat mengambil data dashboard.</p>
       </div>
     );
   }

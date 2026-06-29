@@ -52,7 +52,7 @@ function LoginForm() {
       }
 
       if (!data.user) {
-        setError('Login failed. Please try again.');
+        setError('Login gagal. Silakan coba lagi.');
         return;
       }
 
@@ -75,7 +75,7 @@ function LoginForm() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Login failed. Please try again.');
+        setError('Login gagal. Silakan coba lagi.');
       }
     } finally {
       setLoading(false);
