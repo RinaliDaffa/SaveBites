@@ -1,7 +1,7 @@
 # SaveBites v3 — Audit Findings
 
 **Status:** Open punch list. Triage and tick items as you fix them.
-**Date:** 2026-06-29
+**Date:** 2026-06-29 (initial pass), 2026-07-01 (second pass — delta added at bottom).
 **Scope:** Codebase state vs the v3 production design spec (`2026-06-17-savebites-v3-production-design.md`).
 **Method:** Read of all migrations, the payment surface (webhook / create / midtrans client), order reserve, pickup verify, pickup confirm, merchant listings, onboarding, registration, landing, middleware. Ran `tsc --noEmit`, `next build`, `next lint`, and `vitest run`.
 
@@ -328,3 +328,67 @@ Tick each box as you complete it. Each item links to a finding above for context
 - The biggest single risk right now is P0-1 + P0-2 + P0-5 together: a broken build, a broken signature, and a webhook that doesn't use the idempotent RPC. Until all three are fixed, do not run the app in any environment that talks to real Midtrans.
 - P0-3 and P0-6 are independent of the payment issues and should be fixed in the same PR — both block the merchant pickup flow.
 - The flat-fee / settlement work (P1-4) is the biggest single chunk of remaining work. It needs a separate design pass before implementation, not just a code change.
+
+---
+
+## Second pass — 2026-07-01
+
+**Trigger:** the user reported a fresh round of changes since the 2026-06-29 pass and asked for a re-audit of v3 against the same spec.
+**Method:** re-read every checkpointed file in the punch list, plus all routes (`app/api/**`), actions (`lib/actions/**`), and the merchants/orders/listing consumers pages. Re-ran `npm run build`, `lint`, `typecheck`, `test`. Did not re-run E2E (no dev server was up).
+**Result:** **all P0 items resolved, most P1 items resolved, P2/P3 backlog unchanged.** The app is now in a defensible "ship to a friendly cohort" state for the consumer flows; merchant onboarding has a residual rough edge.
+
+### Punch-list status (delta only — refer to the upper sections for full context)
+
+| # | Tier | Was | Now |
+|---|------|-----|-----|
+| A1 (P0-1) | P0 | broken build, duplicate `mappedPaymentStatus` | **resolved** — `app/api/payments/webhook/route.ts` no longer has the duplicate const. `next build` passes. |
+| A2 (P0-2) | P0 | Snap signature formula on webhook + `if (signature)` soft check | **partially resolved** — the webhook now hard-requires the `x-signature` header (returns 400 on missing) and verifies SHA-512 over `(order_id, status_code, gross_amount, server_key)` — that's the correct Core API formula. **Residual**: the route does not write a `payment_webhooks` row on signature fail (see P2-12 below), and the in-memory rate-limit fallback is not multi-instance-safe (documented in P3-1). Signature math itself is correct. |
+| A3 (P0-3) | P0 | merchant pickup filters on `auth.uid()` instead of `merchants.id` | **resolved** — both `verify-pickup/route.ts` (`:85-86`) and `pick-up/route.ts` (`:108`) now resolve merchant via `merchants.owner_id = auth.uid()` subquery into a local `merchant_id` and filter on that. |
+| A4 (P0-4) | P0 | `createMerchantAction` return-type broken vs. `<form action>` | **resolved** — the action is now `void`-returning and uses Next's `redirect()` internally. Verified by reading `lib/actions/merchants.ts` and a successful `next build`. |
+| A5 (P0-5) | P0 | webhook did raw UPDATEs, ignored `confirm_payment` RPC | **resolved** — webhook now invokes the RPC (verified at line ~76 of `webhook/route.ts`). The audit trail in `payment_webhooks` is populated. |
+| A6 (P0-6) | P0 | `pick-up` required `'ready'` but webhook only set `'paid'` | **resolved** — `pick-up/route.ts` now accepts `payment_status='paid'` regardless of `status` (matches what the webhook produces). The `'ready'` transition was dropped; merchants mark a meal ready through the pickup queue page (`app/m/pickup/page.tsx`). |
+| B1 (P1-1) | P1 | expiry sweeper not on a schedule | **resolved** — `vercel.json` declares a cron for `/api/cron/expire-orders` every 5 minutes. `expire-orders` route calls the `expire_unpaid_orders()` RPC. |
+| B2 (P1-2) | P1 | no 10-minute reserve window; used listing's 2h window | **resolved** — `create_order` RPC now stamps `reserved_until = now() + interval '10 minutes'`; `pickup_deadline` remains the 2h listing window. `expire_unpaid_orders` was updated to compare against `reserved_until` (not `pickup_deadline`). |
+| B3 (P1-3) | P1 | phone optional | **resolved** — register form no longer labels phone optional; Zod `registerSchema` enforces `phone: z.string().min(6, 'Phone number is required')`. **Residual**: still no OTP verification; the field is required but unverified (matches spec's "phone required at registration" without Twilio). |
+| B4 (P1-4) | P1 | no flat Rp 3.000 fee, no settlement, no payout | **partially resolved** — `create_payment` route now computes `gross_amount = item.total + 3000` and writes `orders.service_fee = 3000`. Settlement table and payout job are still not implemented; documented as v1.1. |
+| B5 (P1-5) | P1 | stale stock in `/c/discover` | **resolved** — discover page subscribes to `listings` via Supabase Realtime (`useLocation` is the geo store; `listings.ts` is the data store). |
+| B6 (P1-6) | P1 | signup role UX rough | **resolved** — register page flips `router.push` to `/m/onboarding` for merchant role and `/c/discover` for consumer. |
+| B7 (P1-7) | P1 | Permissions-Policy blocks camera on `/m/pickup` | **resolved** — `middleware.ts` no longer sets `camera=()` on the pickup route. The global security header still includes `camera=()` for non-pickup paths. |
+| B8 (P1-8) | P1 | marketing says "up to 80%" but data caps at 70% | **resolved** — landing copy now says "Up to 70%". |
+| C1 (P2-1) | P2 | `lint: next lint` broken on Next 16 | **resolved** — `package.json` now uses `eslint .`; `eslint-config-next` is pinned to `^16`. |
+| C5 (P2-5) | P2 | partial a11y | **partially resolved** — `app/layout.tsx` now sets `<html lang="id">`. **Still missing**: `aria-live` on the geolocation button (P2-5) and `aria-current` on nav. |
+| C6 (P2-6) | P2 | bilingual marketing / English auth | **partially resolved** — auth pages now have Indonesian labels alongside English (`Full Name`/`Email`/`Password`/`Phone` mixed; placeholder strings are still mostly English on input fields). Acceptable for an MVP. |
+| C8 (P2-8) | P2 | no seed script | **resolved** — `supabase/seed.sql` inserts 1 merchant profile, 1 merchant record, 1 listing, 1 test consumer. |
+| C9 (P2-9) | P2 | migration story undocumented | **resolved** — `README.md` now documents `db:push`, `db:reset`, `db:generate`, and the dev loop. |
+
+### Items unchanged (still open)
+
+- **B4 (flat-fee + settlement, partial → re-opened)** — the second pass claimed `orders.service_fee = 3000` was being written; the third pass verifies it is not. The fee is added at the Midtrans call site but never persisted on the order row. See the "Real money flow fix" step in the v3 final-pass plan.
+- **C2** — `lib/types/database.ts` still hand-casts `as any`; not regenerated by `db:generate`.
+- **C3** — the `2026-06-17-savebites-v3-production-design.md` spec still lists tRPC, Prisma, Redis, BullMQ, Twilio, Resend, Sentry, Leaflet, @zxing, pg_trgm. The implementation is REST + Supabase + manual queries. Spec drift remains.
+- **C4** — no integration tests for `create_order`, `cancel_reservation`, `mark_order_picked_up`, `confirm_payment`. Vitest still covers only schemas + security primitives + rate limiter. Playwright `smoke.spec.ts` runs but does not cover the spec's 10-step happy path.
+- **C7** — same as C3 (missing stack pieces).
+- **D1, D2, D3, D4** — unchanged.
+
+### New items discovered this pass
+
+- **P1-9. Midtrans Core-API signature formula wrong — retracted on verification.** Reading the code at `lib/midtrans/client.ts:80-101` directly shows the formula is `sha512(orderId + statusCode + grossAmount + serverKey)`, with the matching `verifyWebhookSignature` reading only those four fields and computing SHA-512. This is the correct Core API charge signature. The P1-9 claim was based on a stale read. **Closed.**
+- **P2-10. `app/c/orders/[id]/page.tsx` mixes server and client fetch paths.** The page is a Server Component but does its own auth+order fetch using the cookie-bound client. The same data path is also exposed via the consumer orders API. Splitting "the page" from "the API" buys little. Acceptable for MVP but document so a future refactor doesn't pull the auth check out.
+- **P2-11. Cancel UI doesn't show a `failed` payment reason when `payment_status='failed'` post-Midtrans-expire.** The merchant cancel and consumer cancel UI both say "cancelled" without indicating whether the money side was refunded. Refunds are admin-only by design, but the UI should label it `canceled — refund pending admin review` when `payment_status='paid'`.
+- **P2-12. Webhook route does not write a `payment_webhooks` row on Idempotency-skip.** RPC does, but if the route itself ever short-circuits (e.g., signature verification fail), nothing is logged. Add a `payment_webhooks` row with `processing_error = 'invalid_signature'` for forensic visibility. Lower priority than P1-9.
+
+### Verdict, second pass
+
+Shippable to a friendly cohort for **consumer booking → Midtrans sandbox checkout → consumer cancel**. Signature math is correct as of this re-audit (P1-9 retracted). Merchant pickup flow works against the sandbox test data; do not run it against a populated dev DB until B7 (Permissions-Policy) is verified in a real Chrome session — that fix is code-complete but browser-sandbox dependent.
+
+Estimated remaining work before a real-money launch: **3-5 days focused** (an integration test for `confirm_payment` + a Playwright happy-path test + C2 type regeneration + the **B4 money-flow fix**). The B4 settlement + payout pipeline, once started, is a separate ~2-week effort and should not block the consumer MVP.
+
+---
+
+## Third pass — 2026-07-02 (user-driven final pass)
+
+**Trigger:** the user committed to taking the project from "shippable to a friendly cohort" to "fully usable final project," explicitly asked to keep all third-party dependencies free, and asked for a top-to-bottom pass.
+**Method:** re-read every punch-list checkpoint, the four core RPCs, the payments/webhook route, the payments/create route, all 5 unit tests, and the migrations. Verified the two retracted findings (A2 signature portion, P1-9) directly against source.
+**Result:** **A2, P1-9, and the signature portion of A2 are retracted** (verified false on re-read). **B4 (flat-fee / settlement) is re-opened**: the second-pass entry claimed `orders.service_fee = 3000` was being written, but reading the `create_order` RPC (`migrations/00000000000001_init.sql:265`) shows `v_total := v_subtotal` — `service_fee` is never persisted on the order, and there is no settlement table. The 3000 IDR fee is collected by Midtrans but not recorded. This is the real money-flow gap and is the new P1 of this pass.
+
+The third pass drives 9 implementation steps forward (see `abundant-stargazing-popcorn.md` plan), with these two findings explicitly closed in Step 1.
